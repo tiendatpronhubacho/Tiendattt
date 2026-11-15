@@ -11,7 +11,16 @@ workflows:
       - name: Build
         script: |
           set -e
+          echo "=== Danh sach file o thu muc goc ==="
+          ls -la
+          PKG=$(find . -name Package.swift -not -path "*/.build/*" | head -n 1)
+          if [ -z "$PKG" ]; then
+            echo "LOI: Khong tim thay Package.swift trong repo"
+            exit 1
+          fi
+          cd "$(dirname "$PKG")"
+          echo "=== Dang build tai: $(pwd) ==="
           xtool dev build --ipa
     artifacts:
-      - xtool/**/*.ipa
-      - "*.ipa"
+      - "**/xtool/*.ipa"
+      - "**/*.ipa"
