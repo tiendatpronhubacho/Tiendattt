@@ -1,25 +1,32 @@
 workflows:
-  ios-build:
-    name: Build iOS IPA
+  tiendat-unsigned-ipa:
+    name: TienDat unsigned IPA
     instance_type: mac_mini_m2
-    max_build_duration: 30
+    max_build_duration: 60
     scripts:
-      - name: Build
+      - name: Build iOS app without code signing
         script: |
-          set -e
-          xcodebuild -list -project ThreeOneOSFive.xcodeproj
+          set -euo pipefail
+          xcodebuild -version
           xcodebuild \
-            -project ThreeOneOSFive.xcodeproj \
-            -scheme ThreeOneOSFive \
+            -project OriginalXcode/ThreeOneOSFive.xcodeproj \
+            -scheme OGIOS \
             -configuration Release \
             -sdk iphoneos \
-            -derivedDataPath build \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath "$CM_BUILD_DIR/TienDatDerivedData" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
+            CODE_SIGN_IDENTITY='' \
             build
-          mkdir -p Payload
-          cp -R build/Build/Products/Release-iphoneos/*.app Payload/
-          zip -r app-unsigned.ipa Payload
+      - name: Package unsigned IPA
+        script: |
+          set -euo pipefail
+          APP_PATH="$CM_BUILD_DIR/TienDatDerivedData/Build/Products/Release-iphoneos/OGIOS.app"
+          test -d "$APP_PATH"
+          mkdir -p "$CM_BUILD_DIR/ipa/Payload"
+          cp -R "$APP_PATH" "$CM_BUILD_DIR/ipa/Payload/OGIOS.app"
+          (cd "$CM_BUILD_DIR/ipa" && /usr/bin/zip -qry "$CM_BUILD_DIR/TienDat-unsigned.ipa" Payload)
+          test -s "$CM_BUILD_DIR/TienDat-unsigned.ipa"
     artifacts:
-      - app-unsigned.ipa
+      - $CM_BUILD_DIR/TienDat-unsigned.ipa
